@@ -415,7 +415,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     if (!isBoldApproved) steps.push("approveBold");
     if (!isCollApproved) steps.push("approveColl");
 
-    return steps.concat(getFinalSteps(ctx.request, coll.symbol));
+    return steps.concat(getFinalSteps(ctx.request));
   },
 
   parseRequest(request) {
@@ -439,20 +439,12 @@ function getCollChange(
 
 function getFinalSteps(
   request: UpdateBorrowPositionRequest,
-  collSymbol: string,
 ): ("adjustTrove" | "depositBold" | "depositColl" | "withdrawBold" | "withdrawColl")[] {
   const collChange = getCollChange(request.loan, request.prevLoan);
   const debtChange = getDebtChange(request.loan, request.prevLoan);
 
   // both coll and debt change => adjust trove
-  if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) {
-    if (collSymbol === "ETH") {
-      return dn.gt(collChange, 0)
-        ? ["depositColl", dn.gt(debtChange, 0) ? "withdrawBold" : "depositBold"]
-        : [dn.gt(debtChange, 0) ? "withdrawBold" : "depositBold", "withdrawColl"];
-    }
-    return ["adjustTrove"];
-  }
+  if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) return ["adjustTrove"];
 
   // coll increases => deposit
   if (dn.gt(collChange, 0)) return ["depositColl"];
